@@ -4,6 +4,8 @@
 
 //#define _CRT_SECURE_NO_WARNINGS
 
+	FILE *fp;
+
 int main(void);
 void assemble(double adiag[], double aleft[], double arite[], double f[],
 	double h[], int indx[], int nl, int node[], int nu, int nquad, int nsub,
@@ -209,10 +211,9 @@ differential equation is being solved.
 	xquad = (double *)malloc(sizeof(double)*(NSUB));
 	double xr;
 
-	timestamp();
-
-	FILE *fp;
 	fp = fopen("out.txt", "w+");
+	
+	timestamp();
 
 	fprintf(fp, "\n");
 	fprintf(fp, "FEM1D\n");
@@ -262,6 +263,8 @@ differential equation is being solved.
 	fprintf(fp, "\n");
 	timestamp();
 
+	fclose(fp);
+	
 	return 0;
 # undef NL
 # undef NSUB
@@ -662,9 +665,6 @@ void geometry(double h[], int ibc, int indx[], int nl, int node[], int nsub,
 	Set the value of XN, the locations of the nodes.
 	*/
 
-	FILE *fp;
-	fp = fopen("out.txt", "a+");
-
 	fprintf(fp, "\n");
 	fprintf(fp, "  Node      Location\n");
 	fprintf(fp, "\n");
@@ -849,9 +849,6 @@ void init(int *ibc, int *nquad, double *ul, double *ur, double *xl,
 	Print out the values that have been set.
 	*/
 
-	FILE *fp;
-	fp = fopen("out.txt", "a+");
-
 	fprintf(fp, "\n");
 	fprintf(fp, "  The equation is to be solved for\n");
 	fprintf(fp, "  X greater than XL = %f\n", *xl);
@@ -974,9 +971,6 @@ void output(double f[], int ibc, int indx[], int nsub, int nu, double ul,
 {
 	int i;
 	double u;
-
-	FILE *fp;
-	fp = fopen("out.txt", "a+");
 
 	fprintf(fp, "\n");
 	fprintf(fp, "  Computed solution coefficients:\n");
@@ -1194,9 +1188,6 @@ void prsys(double adiag[], double aleft[], double arite[], double f[],
 {
 	int i;
 
-	FILE *fp;
-	fp = fopen("out.txt", "a+");
-
 	fprintf(fp, "\n");
 	fprintf(fp, "Printout of tridiagonal linear system:\n");
 	fprintf(fp, "\n");
@@ -1371,8 +1362,6 @@ None
 
 	len = strftime(time_buffer, TIME_SIZE, "%d %B %Y %I:%M:%S %p", tm);
 
-	FILE *fp;
-	fp = fopen("out.txt", "a+");
 
 	fprintf(fp, "%s\n", time_buffer);
 

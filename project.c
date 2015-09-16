@@ -5,6 +5,7 @@
 //#define _CRT_SECURE_NO_WARNINGS
 
 	FILE *fp;
+	clock_t start, diff;
 
 int main(void);
 void assemble(double adiag[], double aleft[], double arite[], double f[],
@@ -177,6 +178,7 @@ XR is the right endpoint of the interval over which the
 differential equation is being solved.
 */
 {
+	start = clock();
 # define NSUB 80000
 # define NL 20 
 
@@ -212,7 +214,7 @@ differential equation is being solved.
 	double xr;
 
 	fp = fopen("out.txt", "w+");
-	
+		
 	timestamp();
 
 	fprintf(fp, "\n");
@@ -1352,6 +1354,12 @@ None
 {
 # define TIME_SIZE 40
 
+	diff = clock() - start;
+
+	int msec = diff * 1000 / CLOCKS_PER_SEC;
+	
+	fprintf(fp, "Time since start: %dms\n", msec);
+	
 	static char time_buffer[TIME_SIZE];
 	const struct tm *tm;
 	size_t len;

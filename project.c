@@ -1,8 +1,7 @@
 # include <stdlib.h>
 # include <stdio.h>
 # include <time.h>
-
-//#define _CRT_SECURE_NO_WARNINGS
+#include <omp.h>
 
 	FILE *fp;
 	clock_t start, diff;
@@ -438,7 +437,21 @@ void assemble(double adiag[], double aleft[], double arite[], double f[],
 	/*
 	For interval number IE,
 	*/
-	for (ie = 0; ie < nsub; ie++)
+	
+int nthreads, tid;
+	
+#pragma omp parallel private(tid)
+{
+	tid = omp_get_thread_num();
+	fprintf(fp, "Hello World from thread = %d\n", tid);
+	
+	if(tid == 0){
+		nthreads = omp_get_num_threads();
+		fprintf(fp, "Number of threads = %d\n", nthreads);
+	}
+	
+	#pragma omp for schedule(dynamic,10000)
+	for (ie = 0; ie < nsub; ie++) //TODO PARALELIZE HERE
 	{
 		he = h[ie];
 		xleft = xn[node[0 + ie * 2]];
@@ -455,8 +468,10 @@ void assemble(double adiag[], double aleft[], double arite[], double f[],
 			*/
 			for (il = 1; il <= nl; il++)
 			{
+				
 				ig = node[il - 1 + ie * 2];
-				iu = indx[ig] - 1;
+				iu = indx
+				[ig] - 1;
 
 				if (0 <= iu)
 				{
@@ -482,6 +497,7 @@ void assemble(double adiag[], double aleft[], double arite[], double f[],
 					*/
 					for (jl = 1; jl <= nl; jl++)
 					{
+						
 						jg = node[jl - 1 + ie * 2];
 						ju = indx[jg] - 1;
 
@@ -530,6 +546,10 @@ void assemble(double adiag[], double aleft[], double arite[], double f[],
 			}
 		}
 	}
+}
+
+	timestamp();
+
 	return;
 }
 /******************************************************************************/

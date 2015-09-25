@@ -4,7 +4,7 @@
 #include <omp.h>
 
 	FILE *fp;
-	clock_t start, diff;
+	clock_t start, diff, start1[20];
 
 int main(void);
 void assemble(double adiag[], double aleft[], double arite[], double f[],
@@ -26,6 +26,7 @@ double qq(double x);
 void solve(double adiag[], double aleft[], double arite[], double f[],
 	int nu);
 void timestamp(void);
+int stopwatch(int n);
 
 /******************************************************************************/
 
@@ -178,6 +179,7 @@ differential equation is being solved.
 */
 {
 	start = clock();
+	
 # define NSUB 80000
 # define NL 20 
 
@@ -232,28 +234,41 @@ differential equation is being solved.
 	/*
 	Initialize the data.
 	*/
+	start1[0] = clock();	
 	init(&ibc, &nquad, &ul, &ur, &xl, &xr);
+	fprintf(fp, "init duration: %dms\n", stopwatch(0));
+	
 	/*
 	Compute the geometric quantities.
 	*/
 	geometry(h, ibc, indx, NL, node, NSUB, &nu, xl, xn, xquad, xr);
+	fprintf(fp, "geometry duration: %dms\n", stopwatch(0));
+	
 	/*
 	Assemble the linear system.
 	*/
 	assemble(adiag, aleft, arite, f, h, indx, NL, node, nu, nquad,
 		NSUB, ul, ur, xn, xquad);
+	fprintf(fp, "assemble duration: %dms\n", stopwatch(0));
+	
 	/*
 	Print out the linear system.
 	*/
 	prsys(adiag, aleft, arite, f, nu);
+	fprintf(fp, "prsys duration: %dms\n", stopwatch(0));
+	
 	/*
 	Solve the linear system.
 	*/
 	solve(adiag, aleft, arite, f, nu);
+	fprintf(fp, "solve duration: %dms\n", stopwatch(0));
+	
 	/*
 	Print out the solution.
 	*/
 	output(f, ibc, indx, NSUB, nu, ul, ur, xn);
+	fprintf(fp, "output duration: %dms\n", stopwatch(0));
+	
 	/*
 	Terminate.
 	*/
@@ -418,30 +433,39 @@ void assemble(double adiag[], double aleft[], double arite[], double f[],
 	Zero out the arrays that hold the coefficients of the matrix
 	and the right hand side.
 	*/
-	for (i = 0; i < nu; i++)
-	{
-		f[i] = 0.0;
+	#pragma omp parallel private(i, nu)
+{
+	if(omp_get_thread_num()==0){
+		for (i = 0; i < nu; i++)
+		{
+			f[i] = 0.0;
+		}
 	}
-	for (i = 0; i < nu; i++)
-	{
-		adiag[i] = 0.0;
+	if(omp_get_thread_num()==1){
+		for (i = 0; i < nu; i++)
+		{
+			adiag[i] = 0.0;
+		}
 	}
-	for (i = 0; i < nu; i++)
-	{
-		aleft[i] = 0.0;
+	if(omp_get_thread_num()==2){
+		for (i = 0; i < nu; i++)
+		{
+			aleft[i] = 0.0;
+		}
 	}
-	for (i = 0; i < nu; i++)
-	{
-		arite[i] = 0.0;
+	if(omp_get_thread_num()==3){
+		for (i = 0; i < nu; i++)
+		{
+			arite[i] = 0.0;
+		}
 	}
+}
 	/*
 	For interval number IE,
 	*/
 	
 int nthreads, tid;
 	
-#pragma omp parallel private(tid)
-{
 	tid = omp_get_thread_num();
 	fprintf(fp, "Hello World from thread = %d\n", tid);
 	
@@ -450,7 +474,7 @@ int nthreads, tid;
 		fprintf(fp, "Number of threads = %d\n", nthreads);
 	}
 	
-	#pragma omp for schedule(dynamic,10000)
+	start1[1] = clock();
 	for (ie = 0; ie < nsub; ie++) //TODO PARALELIZE HERE
 	{
 		he = h[ie];
@@ -459,6 +483,8 @@ int nthreads, tid;
 		/*
 		consider each quadrature point IQ,
 		*/
+		//#pragma omp for schedule(dynamic,100)
+		start1[2] = clock();
 		for (iq = 0; iq < nquad; iq++)
 		{
 			xquade = xquad[ie];
@@ -466,6 +492,7 @@ int nthreads, tid;
 			and evaluate the integrals associated with the basis functions
 			for the left, and for the right nodes.
 			*/
+			start1[3] = clock();
 			for (il = 1; il <= nl; il++)
 			{
 				
@@ -495,6 +522,7 @@ int nthreads, tid;
 					function times itself, or times the other basis function
 					that is nonzero in this interval.
 					*/
+					start1[4] = clock();
 					for (jl = 1; jl <= nl; jl++)
 					{
 						
@@ -542,12 +570,15 @@ int nthreads, tid;
 							}
 						}
 					}
+					fprintf(fp, "loop4 duration: %dms\n", stopwatch(4));
 				}
 			}
+			fprintf(fp, "loop3 duration: %dms\n", stopwatch(3));
 		}
+		fprintf(fp, "loop2 duration: %dms\n", stopwatch(2));
 	}
-}
-
+	fprintf(fp, "loop1 duration: %dms\n", stopwatch(1));
+	
 	timestamp();
 
 	return;
@@ -1395,4 +1426,14 @@ None
 
 	return;
 # undef TIME_SIZE
+}
+
+int stopwatch(int n){
+	diff = clock() - start1[n];
+
+	int msec = diff * 1000 / CLOCKS_PER_SEC;
+	
+	start1[n] = clock();
+	
+	return msec;	
 }
